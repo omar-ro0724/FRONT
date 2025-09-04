@@ -1,16 +1,15 @@
 package com.example.app.ViewModel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.Model.Usuario
 import com.example.app.Repository.UsuarioRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class UsuarioViewModel @Inject constructor(
@@ -23,7 +22,7 @@ class UsuarioViewModel @Inject constructor(
     private val _usuarioActual = MutableStateFlow<Usuario?>(null)
     val usuarioActual: StateFlow<Usuario?> = _usuarioActual.asStateFlow()
 
-    internal val _error = MutableStateFlow<String?>(null)
+    private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
@@ -37,28 +36,26 @@ class UsuarioViewModel @Inject constructor(
         clearError()
     }
 
+    fun setError(message: String) { _error.value = message }
+    fun clearError() { _error.value = null }
+
     fun login(usuario: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-
             try {
-                println("Iniciando login para usuario: $usuario") // Debug
+                println("Iniciando login para usuario: $usuario")
                 val usuarioAutenticado = repository.login(usuario, password)
                 _usuarioActual.value = usuarioAutenticado
                 println("Login exitoso, usuario autenticado: ${usuarioAutenticado.usuario}")
             } catch (e: Exception) {
                 _error.value = e.message
                 _usuarioActual.value = null
-                println("Error en login: ${e.message}") // Debug
+                println("Error en login: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
         }
-    }
-
-    fun clearError() {
-        _error.value = null
     }
 
     fun logout() {

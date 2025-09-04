@@ -4,6 +4,7 @@ import com.example.app.DTO.LoginRequest
 import com.example.app.Interfaces.RetrofitClient.RetrofitClient
 import com.example.app.Interfaces.UsuarioApiService
 import com.example.app.Model.Usuario
+import javax.inject.Inject
 
 class UsuarioRepository @Inject constructor(
     private val api: UsuarioApiService

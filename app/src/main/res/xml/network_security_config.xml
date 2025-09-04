@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-<domain-config cleartextTrafficPermitted="true">
-    <domain includeSubdomains="true">10.0.2.2</domain>
-</domain-config>
+    <!-- Permitir cleartext para emulador -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+    
+    <!-- Permitir cleartext para rangos de IP comunes en desarrollo -->
+    <base-config cleartextTrafficPermitted="true">
+        <!-- Permitir todas las IPs privadas para desarrollo -->
+        <!-- 192.168.x.x -->
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Permitir cleartext para localhost -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
 </network-security-config>
