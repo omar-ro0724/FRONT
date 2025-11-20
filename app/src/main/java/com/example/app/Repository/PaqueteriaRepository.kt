@@ -1,23 +1,26 @@
 package com.example.app.Repository
 
-import com.example.app.Interfaces.RetrofitClient.RetrofitClient
+import com.example.app.Interfaces.PaqueteriaApiService
 import com.example.app.Model.Paqueteria
+import javax.inject.Inject
 
-class PaqueteriaRepository {
+class PaqueteriaRepository @Inject constructor(
+    private val api: PaqueteriaApiService
+) {
 
     suspend fun obtenerTodos(): List<Paqueteria> {
-        return RetrofitClient.paqueteriaApiService.obtenerPaqueteria()
+        return api.obtenerPaqueteria()
     }
 
     suspend fun obtenerPorId(id: Long): Paqueteria {
-        return RetrofitClient.paqueteriaApiService.obtenerPaquete(id)
+        return api.obtenerPaquete(id)
     }
 
     suspend fun guardar(paqueteria: Paqueteria): Paqueteria {
-        return RetrofitClient.paqueteriaApiService.guardarPaquete(paqueteria)
+        return api.guardarPaquete(paqueteria)
     }
 
     suspend fun eliminar(id: Long) {
-        RetrofitClient.paqueteriaApiService.eliminarPaquete(id)
+        api.eliminarPaquete(id)
     }
 }

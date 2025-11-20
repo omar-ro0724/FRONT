@@ -8,15 +8,15 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface QuejaApiService {
-    @GET("/api/queja")
+    @GET("/api/quejas")
     suspend fun obtenerQuejas(): List<Queja>
 
-    @GET("/api/queja/{id}")
+    @GET("/api/quejas/{id}")
     suspend fun obtenerQueja(@Path("id") id: Long): Queja
 
-    @POST("/api/queja")
+    @POST("/api/quejas")
     suspend fun guardarQueja(@Body queja: Queja): Queja
 
-    @DELETE("/api/queja/{id}")
+    @DELETE("/api/quejas/{id}")
     suspend fun eliminarQueja(@Path("id") id: Long)
 }

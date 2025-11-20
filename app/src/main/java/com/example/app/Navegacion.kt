@@ -23,6 +23,7 @@ import com.example.app.Pantallas.RolAdministrador.PantallaInicioAdmin
 import com.example.app.Pantallas.RolAdministrador.PantallaMascotas
 import com.example.app.Pantallas.RolAdministrador.PantallaMensajes
 import com.example.app.Pantallas.RolAdministrador.PantallaMenu
+import com.example.app.Pantallas.RolAdministrador.PantallaNotificaciones
 import com.example.app.Pantallas.RolAdministrador.PantallaPerfil
 import com.example.app.Pantallas.RolAdministrador.PantallaQuejas
 import com.example.app.Pantallas.RolAdministrador.PantallaReservas
@@ -88,8 +89,15 @@ fun Navegacion(navController: NavHostController) {
         // --- ADMIN ---
         composable("PantallaInicioAdmin") { PantallaInicioAdmin(navController) }
         composable("PantallaCrearUsuario") { PantallaCrearUsuario(navController) }
-        composable("PantallaDashboardAdmin") { PantallaDashboardAdmin(navController) }
-        composable("PantallaCreacionPublicacionAdmin") { PantallaCreacionPublicacionAdmin(navController) }
+        composable("PantallaDashboardAdmin") { 
+            PantallaDashboardAdmin(navController) 
+        }
+        composable("PantallaNotificaciones") { 
+            PantallaNotificaciones(navController) 
+        }
+        composable("PantallaCreacionPublicacionAdmin") { 
+            PantallaCreacionPublicacionAdmin(navController, usuarioViewModel) 
+        }
         composable("PantallaMensajes/{nombre}") { backStackEntry ->
             val nombre = backStackEntry.arguments?.getString("nombre") ?: ""
             PantallaMensajes(nombre = nombre, navController = navController)
@@ -105,7 +113,9 @@ fun Navegacion(navController: NavHostController) {
         composable("PantallaQuejas") { PantallaQuejas(navController) }
         composable("PantallaDetalleQuejas") { PantallaDetalleQuejas(navController) }
         composable("PantallaMascotas") { PantallaMascotas(navController) }
-        composable("PantallaPerfil") { PantallaPerfil(navController) }
+        composable("PantallaPerfil") { 
+            PantallaPerfil(navController, usuarioViewModel) 
+        }
 
         // --- RESIDENTE ---
         composable("PantallaInicioResidentes") { PantallaInicioResidentes(navController) }

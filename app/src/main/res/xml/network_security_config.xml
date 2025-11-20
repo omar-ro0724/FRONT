@@ -5,18 +5,18 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>
     
-    <!-- Permitir cleartext para rangos de IP comunes en desarrollo -->
-    <base-config cleartextTrafficPermitted="true">
-        <!-- Permitir todas las IPs privadas para desarrollo -->
-        <!-- 192.168.x.x -->
-        <trust-anchors>
-            <certificates src="system" />
-        </trust-anchors>
-    </base-config>
-    
     <!-- Permitir cleartext para localhost -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
     </domain-config>
+    
+    <!-- Permitir cleartext para TODAS las IPs privadas (dinámico) -->
+    <base-config cleartextTrafficPermitted="true">
+        <!-- Permitir todas las IPs privadas para desarrollo dinámico -->
+        <!-- 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x, etc. -->
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>

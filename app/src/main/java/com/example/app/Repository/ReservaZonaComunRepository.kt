@@ -1,23 +1,26 @@
 package com.example.app.Repository
 
-import com.example.app.Interfaces.RetrofitClient.RetrofitClient
+import com.example.app.Interfaces.ReservaZonaComunApiService
 import com.example.app.Model.ReservaZonaComun
+import javax.inject.Inject
 
-class ReservaZonaComunRepository {
+class ReservaZonaComunRepository @Inject constructor(
+    private val api: ReservaZonaComunApiService
+) {
 
     suspend fun obtenerTodos(): List<ReservaZonaComun> {
-        return RetrofitClient.reservaZonaComunApiService.obtenerReservas()
+        return api.obtenerReservas()
     }
 
     suspend fun obtenerPorId(id: Long): ReservaZonaComun {
-        return RetrofitClient.reservaZonaComunApiService.obtenerReserva(id)
+        return api.obtenerReserva(id)
     }
 
     suspend fun guardar(reserva: ReservaZonaComun): ReservaZonaComun {
-        return RetrofitClient.reservaZonaComunApiService.guardarReserva(reserva)
+        return api.guardarReserva(reserva)
     }
 
     suspend fun eliminar(id: Long) {
-        RetrofitClient.reservaZonaComunApiService.eliminarReserva(id)
+        api.eliminarReserva(id)
     }
 }

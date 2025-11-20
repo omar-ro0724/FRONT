@@ -55,7 +55,7 @@ fun PantallaMenu(navController: NavController) {
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Menú",
+                text = "Menú Principal",
                 style = MaterialTheme.typography.headlineMedium.copy(color = GrisClaro)
             )
         }

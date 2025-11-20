@@ -1,23 +1,26 @@
 package com.example.app.Repository
 
-import com.example.app.Interfaces.RetrofitClient.RetrofitClient
+import com.example.app.Interfaces.PagoAdministracionApiService
 import com.example.app.Model.PagoAdministracion
+import javax.inject.Inject
 
-class PagoAdministracionRepository {
+class PagoAdministracionRepository @Inject constructor(
+    private val api: PagoAdministracionApiService
+) {
 
     suspend fun obtenerTodos(): List<PagoAdministracion> {
-        return RetrofitClient.pagoAdministracionApiService.obtenerPagos()
+        return api.obtenerPagos()
     }
 
     suspend fun obtenerPorId(id: Long): PagoAdministracion {
-        return RetrofitClient.pagoAdministracionApiService.obtenerPago(id)
+        return api.obtenerPago(id)
     }
 
     suspend fun guardar(pagoAdministracion: PagoAdministracion): PagoAdministracion {
-        return RetrofitClient.pagoAdministracionApiService.guardarPago(pagoAdministracion)
+        return api.guardarPago(pagoAdministracion)
     }
 
     suspend fun eliminar(id: Long) {
-        RetrofitClient.pagoAdministracionApiService.eliminarPago(id)
+        api.eliminarPago(id)
     }
 }

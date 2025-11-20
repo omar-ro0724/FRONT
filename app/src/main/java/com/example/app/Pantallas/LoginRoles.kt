@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -42,7 +43,6 @@ fun PantallaLogin(
                         popUpTo("PantallaLogin") { inclusive = true }
                     }
                 } else {
-                    usuarioViewModel.clearError()
                     usuarioViewModel.setError("Usuario no autorizado para este rol")
                 }
             }
@@ -164,7 +164,24 @@ fun PantallaLogin(
             }
 
             error?.let {
-                Text(text = it, color = Color.Red, modifier = Modifier.padding(top = 8.dp))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0x33FF0000) // Rojo semi-transparente
+                    )
+                ) {
+                    Text(
+                        text = it,
+                        color = Color.Red,
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .fillMaxWidth(),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp
+                    )
+                }
             }
         }
     }

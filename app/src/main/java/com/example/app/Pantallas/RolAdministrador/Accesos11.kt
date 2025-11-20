@@ -71,12 +71,12 @@ fun PantallaAccesos(navController: NavController) {
                 modifier = Modifier.size(35.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("${accesosVehiculares.size} accesos", color = Color.LightGray, fontSize = 12.sp)
+            Text("0 accesos", color = Color.LightGray, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         if (accesosVehiculares.isEmpty()) {
-            Text("No hay accesos creados", color = Color.Gray, fontSize = 14.sp)
+            Text("0 accesos", color = Color.Gray, fontSize = 14.sp)
         } else {
             accesosVehiculares.forEach { acceso ->
                 AccesoItem(acceso) {
@@ -96,12 +96,12 @@ fun PantallaAccesos(navController: NavController) {
                 modifier = Modifier.size(25.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("${accesosPeatonales.size} accesos", color = Color.LightGray, fontSize = 12.sp)
+            Text("0 accesos", color = Color.LightGray, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         if (accesosPeatonales.isEmpty()) {
-            Text("No hay accesos creados", color = Color.Gray, fontSize = 14.sp)
+            Text("0 accesos", color = Color.Gray, fontSize = 14.sp)
         } else {
             accesosPeatonales.forEach { acceso ->
                 AccesoItem(acceso) {

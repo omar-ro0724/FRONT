@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,24 +43,38 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.LaunchedEffect
 import com.example.app.ui.theme.AzulOscuro
 import com.example.app.ui.theme.DoradoElegante
 import com.example.app.ui.theme.GrisClaro
 import com.example.app.ui.theme.GrisOscuro
+import com.example.app.ViewModel.UsuarioViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaPerfil(navController: NavController) {
+fun PantallaPerfil(navController: NavController, usuarioViewModel: UsuarioViewModel = hiltViewModel()) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
 
-    var nombre by remember { mutableStateOf("") }
-    var usuario by remember { mutableStateOf("") }
-    var contrasena by remember { mutableStateOf("") }
-    var estado by remember { mutableStateOf("") }
-    val totalUsuarios = 0
+    val usuarioActual by usuarioViewModel.usuarioActual.collectAsState()
+    val usuarios by usuarioViewModel.usuarios.collectAsState()
+
+    var nombre by remember { mutableStateOf(usuarioActual?.nombre ?: "") }
+    var usuario by remember { mutableStateOf(usuarioActual?.usuario ?: "") }
+    var contrasena by remember { mutableStateOf(usuarioActual?.password ?: "") }
+
+    LaunchedEffect(Unit) {
+        usuarioViewModel.obtenerTodos()
+    }
+
+    LaunchedEffect(usuarioActual) {
+        nombre = usuarioActual?.nombre ?: ""
+        usuario = usuarioActual?.usuario ?: ""
+        contrasena = usuarioActual?.password ?: ""
+    }
 
     Scaffold(
         containerColor = AzulOscuro,
@@ -100,18 +115,19 @@ fun PantallaPerfil(navController: NavController) {
             CampoPerfil("Nombre", nombre) { nombre = it }
             CampoPerfil("Usuario", usuario) { usuario = it }
             CampoPerfil("Contraseña", contrasena) { contrasena = it }
-            CampoPerfil("Estado", estado) { estado = it }
 
             Spacer(modifier = Modifier.height(32.dp))
             Text("Usuarios", color = Color.White, fontWeight = FontWeight.Bold)
 
-            InfoPerfil("Usuarios Creados", totalUsuarios.toString())
+            InfoPerfil("Usuarios Creados", usuarios.size.toString())
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = { showDialog = true },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DoradoElegante)
             ) {
                 Text("Cerrar Sesión", color = Color.White)
@@ -125,8 +141,13 @@ fun PantallaPerfil(navController: NavController) {
                     confirmButton = {
                         TextButton(onClick = {
                             showDialog = false
+                            usuarioViewModel.logout()
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar("Sesión cerrada correctamente.")
+                                kotlinx.coroutines.delay(500)
+                                navController.navigate("PantallaSeleccionRol") {
+                                    popUpTo("PantallaSeleccionRol") { inclusive = true }
+                                }
                             }
                         }) {
                             Text("Sí")

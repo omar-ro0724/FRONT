@@ -1,7 +1,7 @@
 package com.example.app.Pantallas.RolResidente
 
 import android.graphics.Bitmap
-
+import android.graphics.Color as AndroidColor
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,23 +21,44 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
+import com.example.app.Model.AccesoPeatonal
+import com.example.app.ViewModel.AccesoPeatonalViewModel
+import com.example.app.ViewModel.UsuarioViewModel
 import com.example.app.ui.theme.AzulOscuro
 import com.example.app.ui.theme.DoradoElegante
 import com.example.app.ui.theme.GrisClaro
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Composable
-fun PantallaAccesoPeatonalResidente(navController: NavController) {
-    var torreApto by remember { mutableStateOf("") }
-    var fecha by remember { mutableStateOf("") }
-    var horario by remember { mutableStateOf("") }
-    var quienIngresa by remember { mutableStateOf("") }
-    var autorizadoPor by remember { mutableStateOf("") }
+fun PantallaAccesoPeatonalResidente(
+    navController: NavController,
+    accesoPeatonalViewModel: AccesoPeatonalViewModel = hiltViewModel(),
+    usuarioViewModel: UsuarioViewModel = hiltViewModel()
+) {
+    val usuarioActual by usuarioViewModel.usuarioActual.collectAsState()
+    val isLoading by accesoPeatonalViewModel.isLoading.collectAsState()
+    val error by accesoPeatonalViewModel.error.collectAsState()
+    
+    var nombreVisitante by remember { mutableStateOf("") }
+    var torre by remember { mutableStateOf(usuarioActual?.torre ?: "") }
+    var apartamento by remember { mutableStateOf(usuarioActual?.apartamento ?: "") }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var accesoGuardado by remember { mutableStateOf<AccesoPeatonal?>(null) }
 
     val context = LocalContext.current
+
+    // Mostrar errores
+    LaunchedEffect(error) {
+        error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            accesoPeatonalViewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -61,44 +82,81 @@ fun PantallaAccesoPeatonalResidente(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        CampoAccesoP("Torre - Apartamento", torreApto) { torreApto = it }
-        CampoAccesoP("Fecha", fecha) { fecha = it }
-        CampoAccesoP("Horario", horario) { horario = it }
-        CampoAccesoP("Quién Ingresa", quienIngresa) { quienIngresa = it }
-        CampoAccesoP("Autorizado Por", autorizadoPor) { autorizadoPor = it }
+        CampoAccesoP("Nombre del Visitante", nombreVisitante) { nombreVisitante = it }
+        CampoAccesoP("Torre", torre) { torre = it }
+        CampoAccesoP("Apartamento", apartamento) { apartamento = it }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                val data = """
-                    Acceso Peatonal:
-                    Torre: $torreApto
-                    Fecha: $fecha
-                    Hora: $horario
-                    Ingresa: $quienIngresa
-                    Autorizado por: $autorizadoPor
-                """.trimIndent()
+                if (nombreVisitante.isBlank() || torre.isBlank() || apartamento.isBlank()) {
+                    Toast.makeText(context, "Por favor complete todos los campos", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
 
-                qrBitmap = generarCodigoQR(data)
-                Toast.makeText(context, "Acceso creado con éxito", Toast.LENGTH_SHORT).show()
+                // Generar código QR único
+                val codigoQR = "ACCESO-${System.currentTimeMillis()}-${torre}-${apartamento}"
+                
+                // Crear el acceso peatonal
+                val acceso = AccesoPeatonal(
+                    nombreVisitante = nombreVisitante,
+                    torre = torre,
+                    apartamento = apartamento,
+                    codigoQr = codigoQR,
+                    autorizadoPor = usuarioActual,
+                    horaAutorizada = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME),
+                    horaEntrada = null,
+                    horaSalida = null
+                )
+
+                // Guardar en el backend
+                accesoPeatonalViewModel.guardarAccesoPeatonal(acceso)
+                
+                // Generar QR con el código
+                qrBitmap = generarCodigoQR(codigoQR)
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = DoradoElegante)
+            colors = ButtonDefaults.buttonColors(containerColor = DoradoElegante),
+            enabled = !isLoading
         ) {
-            Text("Crear Acceso", color = AzulOscuro)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = AzulOscuro
+                )
+            } else {
+                Text("Crear Acceso", color = AzulOscuro)
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         qrBitmap?.let {
-            Image(
-                bitmap = it.asImageBitmap(),
-                contentDescription = "Código QR",
+            Column(
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .size(200.dp)
-            )
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Código QR de Acceso",
+                    color = GrisClaro,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Código QR",
+                    modifier = Modifier.size(200.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Muestre este código al celador",
+                    color = LightGray,
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }
@@ -110,17 +168,11 @@ fun generarCodigoQR(texto: String): Bitmap {
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
     for (x in 0 until size) {
         for (y in 0 until size) {
-            bitmap.setPixel(x, y, if (bitMatrix.get(x, y)) Color.Black else Color.White)
+            val color = if (bitMatrix.get(x, y)) AndroidColor.BLACK else AndroidColor.WHITE
+            bitmap.setPixel(x, y, color)
         }
     }
     return bitmap
-}
-
-private fun Bitmap.setPixel(
-    a: kotlin.Int,
-    i: kotlin.Int,
-    color: androidx.compose.ui.graphics.Color
-) {
 }
 
 @Composable

@@ -49,7 +49,7 @@ class UsuarioViewModel @Inject constructor(
                 _usuarioActual.value = usuarioAutenticado
                 println("Login exitoso, usuario autenticado: ${usuarioAutenticado.usuario}")
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.message ?: "Error desconocido"
                 _usuarioActual.value = null
                 println("Error en login: ${e.message}")
             } finally {
@@ -62,6 +62,19 @@ class UsuarioViewModel @Inject constructor(
         _usuarioActual.value = null
         _error.value = null
         _rolSeleccionado.value = null
+    }
+
+    fun obtenerTodos() = viewModelScope.launch {
+        _isLoading.value = true
+        _error.value = null
+        try {
+            val lista = repository.obtenerTodos()
+            _usuarios.value = lista
+        } catch (e: Exception) {
+            _error.value = "Error al obtener usuarios: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
     }
 }
 

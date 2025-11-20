@@ -1,23 +1,26 @@
 package com.example.app.Repository
 
-import com.example.app.Interfaces.RetrofitClient.RetrofitClient
+import com.example.app.Interfaces.VisitanteApiService
 import com.example.app.Model.Visitante
+import javax.inject.Inject
 
-class VisitanteRepository {
+class VisitanteRepository @Inject constructor(
+    private val api: VisitanteApiService
+) {
 
     suspend fun obtenerTodos(): List<Visitante> {
-        return RetrofitClient.visitanteApiService.obtenerVisitantes()
+        return api.obtenerVisitantes()
     }
 
     suspend fun obtenerPorId(id: Long): Visitante {
-        return RetrofitClient.visitanteApiService.obtenerVisitante(id)
+        return api.obtenerVisitante(id)
     }
 
     suspend fun guardar(visitante: Visitante): Visitante {
-        return RetrofitClient.visitanteApiService.guardarVisitante(visitante)
+        return api.guardarVisitante(visitante)
     }
 
     suspend fun eliminar(id: Long) {
-        RetrofitClient.visitanteApiService.eliminarVisitante(id)
+        api.eliminarVisitante(id)
     }
 }

@@ -12,5 +12,8 @@ data class Notificacion(
     val fechaEnvio: String?,  // Formato ISO 8601
 
     @SerializedName("usuario")
-    val usuario: Usuario? = null
+    val usuario: Usuario? = null,
+
+    @SerializedName("imagenUrl")
+    val imagenUrl: String? = null  // Ruta de la imagen adjunta
 )

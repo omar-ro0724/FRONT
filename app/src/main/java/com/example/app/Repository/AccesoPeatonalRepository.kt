@@ -1,23 +1,26 @@
 package com.example.app.Repository
 
-import com.example.app.Interfaces.RetrofitClient.RetrofitClient
+import com.example.app.Interfaces.AccesoPeatonalApiService
 import com.example.app.Model.AccesoPeatonal
+import javax.inject.Inject
 
-class AccesoPeatonalRepository {
+class AccesoPeatonalRepository @Inject constructor(
+    private val api: AccesoPeatonalApiService
+) {
 
     suspend fun obtenerAccesosPeatonales(): List<AccesoPeatonal> {
-        return RetrofitClient.accesoPeatonalApiService .obtenerAccesosPeatonales()
+        return api.obtenerAccesosPeatonales()
     }
 
     suspend fun obtenerAccesoPeatonal(id: Long): AccesoPeatonal {
-        return RetrofitClient.accesoPeatonalApiService.obtenerAccesoPeatonal(id)
+        return api.obtenerAccesoPeatonal(id)
     }
 
     suspend fun guardarAccesoPeatonal(accesoPeatonal: AccesoPeatonal): AccesoPeatonal {
-        return RetrofitClient.accesoPeatonalApiService.guardarAccesoPeatonal(accesoPeatonal)
+        return api.guardarAccesoPeatonal(accesoPeatonal)
     }
 
     suspend fun eliminarAccesoPeatonal(id: Long) {
-        RetrofitClient.accesoPeatonalApiService.eliminarAccesoPeatonal(id)
+        api.eliminarAccesoPeatonal(id)
     }
 }

@@ -89,7 +89,7 @@ fun PantallaNotificacionesCelador(navController: NavController) {
                         containerColor = if (selectedTab == "Paqueteria") DoradoElegante else GrisClaro
                     )
                 ) {
-                    Text("Pagos", color = AzulOscuro)
+                    Text("Paqueteria", color = AzulOscuro)
                 }
 
                 Button(
@@ -102,7 +102,7 @@ fun PantallaNotificacionesCelador(navController: NavController) {
                         containerColor = if (selectedTab == "Recibos") DoradoElegante else GrisClaro
                     )
                 ) {
-                    Text("Pagos", color = AzulOscuro)
+                    Text("Recibos", color = AzulOscuro)
                 }
             }
         }

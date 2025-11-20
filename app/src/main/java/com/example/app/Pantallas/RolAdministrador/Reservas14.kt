@@ -107,7 +107,7 @@ fun ReservaCategoria(
         }
 
         Text(
-            text = "${reservas.size} Reservas",
+            text = "0 Reservas",
             color = Color.LightGray,
             fontSize = 12.sp,
             modifier = Modifier.padding(start = 35.dp, top = 2.dp)

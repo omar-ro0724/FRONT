@@ -1,31 +1,92 @@
 package com.example.app.ViewModel
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.Model.PagoAdministracion
 import com.example.app.Repository.PagoAdministracionRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class PagoAdministracionViewModel : ViewModel() {
+@HiltViewModel
+class PagoAdministracionViewModel @Inject constructor(
+    private val repository: PagoAdministracionRepository
+) : ViewModel() {
 
-    private val repository = PagoAdministracionRepository()
+    private val _pagos = MutableStateFlow<List<PagoAdministracion>>(emptyList())
+    val pagos: StateFlow<List<PagoAdministracion>> = _pagos.asStateFlow()
 
-    val pagos = MutableLiveData<List<PagoAdministracion>>()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     fun obtenerTodos() = viewModelScope.launch {
-        pagos.postValue(repository.obtenerTodos())
+        _isLoading.value = true
+        _error.value = null
+        try {
+            val lista = withContext(Dispatchers.IO) {
+                repository.obtenerTodos()
+            }
+            _pagos.value = lista
+        } catch (e: Exception) {
+            _error.value = "Error al obtener pagos: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
     }
 
     fun guardar(pago: PagoAdministracion) = viewModelScope.launch {
-        repository.guardar(pago)
-        obtenerTodos()
+        _isLoading.value = true
+        _error.value = null
+        try {
+            val pagoGuardado = withContext(Dispatchers.IO) {
+                repository.guardar(pago)
+            }
+            obtenerTodos()
+        } catch (e: Exception) {
+            _error.value = "Error al guardar pago: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
     }
 
     fun eliminar(id: Long) = viewModelScope.launch {
-        repository.eliminar(id)
-        obtenerTodos()
+        _isLoading.value = true
+        _error.value = null
+        try {
+            withContext(Dispatchers.IO) {
+                repository.eliminar(id)
+            }
+            obtenerTodos()
+        } catch (e: Exception) {
+            _error.value = "Error al eliminar pago: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
     }
 
-    suspend fun obtenerPorId(id: Long) = repository.obtenerPorId(id)
+    fun obtenerPorId(id: Long) = viewModelScope.launch {
+        _isLoading.value = true
+        _error.value = null
+        try {
+            withContext(Dispatchers.IO) {
+                repository.obtenerPorId(id)
+            }
+        } catch (e: Exception) {
+            _error.value = "Error al obtener pago: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    fun clearError() {
+        _error.value = null
+    }
 }

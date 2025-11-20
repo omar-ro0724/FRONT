@@ -1,51 +1,104 @@
 package com.example.app.ViewModel
 
-
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.Model.AccesoVehicular
 import com.example.app.Repository.AccesoVehicularRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class AccesoVehicularViewModel : ViewModel() {
+@HiltViewModel
+class AccesoVehicularViewModel @Inject constructor(
+    private val repository: AccesoVehicularRepository
+) : ViewModel() {
 
-    private val repository = AccesoVehicularRepository()
+    private val _accesosVehiculares = MutableStateFlow<List<AccesoVehicular>>(emptyList())
+    val accesosVehiculares: StateFlow<List<AccesoVehicular>> = _accesosVehiculares.asStateFlow()
 
-    private val _accesosVehiculares = MutableLiveData<List<AccesoVehicular>?>(emptyList())
-    val accesosVehiculares: MutableLiveData<List<AccesoVehicular>?> = _accesosVehiculares
+    private val _accesoSeleccionado = MutableStateFlow<AccesoVehicular?>(null)
+    val accesoSeleccionado: StateFlow<AccesoVehicular?> = _accesoSeleccionado.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     fun obtenerAccesosVehiculares() {
         viewModelScope.launch {
-            val lista = withContext(Dispatchers.IO) {
-                repository.obtenerTodos()
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val lista = withContext(Dispatchers.IO) {
+                    repository.obtenerTodos()
+                }
+                _accesosVehiculares.value = lista
+            } catch (e: Exception) {
+                _error.value = "Error al obtener accesos: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-            _accesosVehiculares.postValue(lista)
         }
     }
 
     fun obtenerAccesoVehicular(id: Long) {
         viewModelScope.launch {
-            val acceso = withContext(Dispatchers.IO) {
-                repository.obtenerPorId(id)
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val acceso = withContext(Dispatchers.IO) {
+                    repository.obtenerPorId(id)
+                }
+                _accesoSeleccionado.value = acceso
+            } catch (e: Exception) {
+                _error.value = "Error al obtener acceso: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-            // Aquí puedes usar otro LiveData para exponer ese acceso si lo necesitas.
         }
     }
 
     fun guardarAccesoVehicular(accesoVehicular: AccesoVehicular) {
         viewModelScope.launch {
-            repository.guardar(accesoVehicular)
-            obtenerAccesosVehiculares()
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val accesoGuardado = withContext(Dispatchers.IO) {
+                    repository.guardar(accesoVehicular)
+                }
+                obtenerAccesosVehiculares() // Refrescar lista
+            } catch (e: Exception) {
+                _error.value = "Error al guardar acceso: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
     fun eliminarAccesoVehicular(id: Long) {
         viewModelScope.launch {
-            repository.eliminar(id)
-            obtenerAccesosVehiculares()
+            _isLoading.value = true
+            _error.value = null
+            try {
+                withContext(Dispatchers.IO) {
+                    repository.eliminar(id)
+                }
+                obtenerAccesosVehiculares() // Refrescar lista
+            } catch (e: Exception) {
+                _error.value = "Error al eliminar acceso: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }
