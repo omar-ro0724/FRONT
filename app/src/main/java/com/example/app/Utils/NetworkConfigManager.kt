@@ -104,6 +104,7 @@ object NetworkConfigManager {
         
         // 3. IPs comunes predefinidas (como respaldo)
         val commonServerIps = listOf(
+            "10.51.201.247",    // IP principal conocida del servidor (ALTA PRIORIDAD)
             "192.168.100.9",    // Red WiFi conocida (alta prioridad)
             "192.168.100.1",    // Gateway común
             "192.168.100.100",  // IP común
@@ -127,7 +128,7 @@ object NetworkConfigManager {
     }
     
     // Probar conexión a una IP específica
-    suspend fun testConnection(ip: String, port: Int = DEFAULT_PORT, timeoutSeconds: Int = 3): Boolean {
+    suspend fun testConnection(ip: String, port: Int = DEFAULT_PORT, timeoutSeconds: Int = 2): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val client = OkHttpClient.Builder()
@@ -202,8 +203,8 @@ object NetworkConfigManager {
             Log.d("NetworkConfigManager", "IPs a probar: ${possibleIps.size}")
             Log.d("NetworkConfigManager", "═══════════════════════════════════════")
             
-            // Probar IPs en lotes (limitado a 50 simultáneas para búsqueda más rápida)
-            val batchSize = 50
+            // Probar IPs en lotes (limitado a 100 simultáneas para búsqueda más rápida)
+            val batchSize = 100
             var testedCount = 0
             // Probar TODAS las IPs posibles (sin límite)
             val ipsToTest = possibleIps
@@ -219,7 +220,7 @@ object NetworkConfigManager {
                             if (testedCount <= 20 || testedCount % 30 == 0) {
                                 Log.d("NetworkConfigManager", "[$testedCount/${ipsToTest.size}] Probando $ip:8080...")
                             }
-                            ip to testConnection(ip, timeoutSeconds = 3) // Timeout de 3 segundos
+                            ip to testConnection(ip, timeoutSeconds = 2) // Timeout de 2 segundos para búsqueda más rápida
                         }
                     }.map { it.await() }
                 }

@@ -51,6 +51,7 @@ fun PantallaCreacionPublicacionAdmin(
     notificacionViewModel: NotificacionViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val usuarioActual by usuarioViewModel.usuarioActual.collectAsState()
     val isLoading by notificacionViewModel.isLoading.collectAsState()
     
@@ -305,17 +306,25 @@ fun PantallaCreacionPublicacionAdmin(
                             imagenUrl = imagenSeleccionada  // Guardar ruta de la imagen
                         )
                         
-                        notificacionViewModel.guardar(notificacion)
-                        mensajeExito = "Publicación creada exitosamente"
-                        
-                        // Limpiar campos después de guardar
-                        descripcion = ""
-                        imagenSeleccionada = null
-                        imageFile = null
-                        
-                        // Marcar como guardado y refrescar
-                        publicacionGuardada = true
-                        notificacionViewModel.obtenerTodos()
+                        coroutineScope.launch {
+                            try {
+                                notificacionViewModel.guardar(notificacion)
+                                mensajeExito = "Publicación creada exitosamente"
+                                mensajeError = null
+                                
+                                // Limpiar campos después de guardar
+                                descripcion = ""
+                                imagenSeleccionada = null
+                                imageFile = null
+                                
+                                // Marcar como guardado y refrescar
+                                publicacionGuardada = true
+                                notificacionViewModel.obtenerTodos()
+                            } catch (e: Exception) {
+                                mensajeError = "Error al guardar publicación: ${e.message}"
+                                mensajeExito = null
+                            }
+                        }
                     }
                 },
                 enabled = !isLoading,

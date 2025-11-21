@@ -83,9 +83,7 @@ object AppModule {
     // Repositories
     @Provides
     @Singleton
-    fun provideUsuarioRepository(
-        api: UsuarioApiService
-    ): UsuarioRepository = UsuarioRepository(api)
+    fun provideUsuarioRepository(): UsuarioRepository = UsuarioRepository()
 
     @Provides
     @Singleton

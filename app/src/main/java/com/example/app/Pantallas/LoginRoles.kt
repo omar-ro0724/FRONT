@@ -178,8 +178,8 @@ fun PantallaLogin(
                         modifier = Modifier
                             .padding(12.dp)
                             .fillMaxWidth(),
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
                     )
                 }
             }

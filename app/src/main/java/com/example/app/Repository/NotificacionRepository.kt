@@ -9,18 +9,55 @@ class NotificacionRepository @Inject constructor(
 ) {
 
     suspend fun obtenerTodos(): List<Notificacion> {
-        return api.obtenerNotificaciones()
+        return try {
+            api.obtenerNotificaciones()
+        } catch (e: java.net.ConnectException) {
+            throw Exception("No se pudo conectar al servidor para obtener notificaciones")
+        } catch (e: java.net.SocketTimeoutException) {
+            throw Exception("Tiempo de espera agotado al obtener notificaciones")
+        } catch (e: retrofit2.HttpException) {
+            when (e.code()) {
+                500 -> throw Exception("Error del servidor al obtener notificaciones. Verifica que la columna 'imagen_url' exista en la base de datos.")
+                else -> throw Exception("Error HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: Exception) {
+            throw Exception("Error al obtener notificaciones: ${e.message}")
+        }
     }
 
     suspend fun obtenerPorId(id: Long): Notificacion {
-        return api.obtenerNotificacion(id)
+        return try {
+            api.obtenerNotificacion(id)
+        } catch (e: Exception) {
+            throw Exception("Error al obtener notificación: ${e.message}")
+        }
     }
 
     suspend fun guardar(notificacion: Notificacion): Notificacion {
-        return api.guardarNotificacion(notificacion)
+        return try {
+            api.guardarNotificacion(notificacion)
+        } catch (e: java.net.ConnectException) {
+            throw Exception("No se pudo conectar al servidor para guardar la publicación")
+        } catch (e: java.net.SocketTimeoutException) {
+            throw Exception("Tiempo de espera agotado al guardar la publicación")
+        } catch (e: retrofit2.HttpException) {
+            when (e.code()) {
+                400 -> throw Exception("Datos inválidos. Verifica que todos los campos estén correctos.")
+                500 -> throw Exception("Error del servidor al guardar. Verifica que la base de datos esté configurada correctamente.")
+                else -> throw Exception("Error HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: Exception) {
+            throw Exception("Error al guardar publicación: ${e.message}")
+        }
     }
 
     suspend fun eliminar(id: Long) {
-        api.eliminarNotificacion(id)
+        try {
+            api.eliminarNotificacion(id)
+        } catch (e: java.net.ConnectException) {
+            throw Exception("No se pudo conectar al servidor para eliminar la publicación")
+        } catch (e: Exception) {
+            throw Exception("Error al eliminar publicación: ${e.message}")
+        }
     }
 }
