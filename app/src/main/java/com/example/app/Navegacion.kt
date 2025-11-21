@@ -88,7 +88,9 @@ fun Navegacion(navController: NavHostController) {
 
         // --- ADMIN ---
         composable("PantallaInicioAdmin") { PantallaInicioAdmin(navController) }
-        composable("PantallaCrearUsuario") { PantallaCrearUsuario(navController) }
+        composable("PantallaCrearUsuario") { 
+            PantallaCrearUsuario(navController, usuarioViewModel) 
+        }
         composable("PantallaDashboardAdmin") { 
             PantallaDashboardAdmin(navController) 
         }

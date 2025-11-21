@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,8 +49,18 @@ fun PantallaDashboardAdmin(
     val isLoading by notificacionViewModel.isLoading.collectAsState()
     val error by notificacionViewModel.error.collectAsState()
     
-    // Refrescar notificaciones cuando se entra a la pantalla y cuando se vuelve
+    // Refrescar notificaciones cuando se entra a la pantalla
     LaunchedEffect(Unit) {
+        try {
+            notificacionViewModel.obtenerTodos()
+        } catch (e: Exception) {
+            // Error manejado por el ViewModel
+        }
+    }
+    
+    // Refrescar cuando se vuelve a esta pantalla desde otra
+    LaunchedEffect(navController) {
+        // Este efecto se ejecutará cuando la pantalla esté activa
         try {
             notificacionViewModel.obtenerTodos()
         } catch (e: Exception) {
@@ -147,34 +158,52 @@ fun PantallaDashboardAdmin(
             ) {
                 CircularProgressIndicator(color = DoradoElegante)
             }
-        } else if (notificaciones.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No hay publicaciones disponibles.",
-                    color = GrisClaro,
-                    fontSize = 16.sp
-                )
-            }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(
-                    items = notificaciones.reversed(),
-                    key = { notificacion -> notificacion.id ?: System.currentTimeMillis() }
-                ) { notificacion ->
-                    PublicacionItem(
-                        notificacion = notificacion,
-                        notificacionViewModel = notificacionViewModel
+            // Filtrar notificaciones válidas (usando la función helper del modelo)
+            val notificacionesValidas = notificaciones.filter { 
+                it.esValida()
+            }
+            
+            if (notificacionesValidas.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No hay publicaciones disponibles.",
+                        color = GrisClaro,
+                        fontSize = 16.sp
                     )
+                }
+            } else {
+                val notificacionesReversed = notificacionesValidas.reversed()
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        count = notificacionesReversed.size,
+                        key = { index -> 
+                            val notificacion = notificacionesReversed[index]
+                            // Generar clave única: usar ID si existe, sino usar índice + hash del mensaje + fecha
+                            notificacion.id ?: run {
+                                val mensajeHash = notificacion.mensajeSeguro().hashCode().toLong()
+                                val fechaHash = notificacion.fechaEnvio?.hashCode()?.toLong() ?: 0L
+                                // Usar índice como parte de la clave para garantizar unicidad
+                                index.toLong() * 1000000000L + mensajeHash * 1000L + fechaHash + index
+                            }
+                        }
+                    ) { index ->
+                        val notificacion = notificacionesReversed[index]
+                        PublicacionItem(
+                            notificacion = notificacion,
+                            notificacionViewModel = notificacionViewModel
+                        )
+                    }
                 }
             }
         }
@@ -258,6 +287,14 @@ fun PublicacionItem(
                         containerColor = AzulOscuro
                     ) {
                         DropdownMenuItem(
+                            text = { Text("Editar", color = Color.White) },
+                            onClick = {
+                                showMenu = false
+                                // TODO: Navegar a pantalla de edición
+                                // navController.navigate("PantallaEditarPublicacion/${notificacion.id}")
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Eliminar", color = Color.Red) },
                             onClick = {
                                 showMenu = false
@@ -276,7 +313,7 @@ fun PublicacionItem(
             }
 
             // Mensaje/descripción (antes de la imagen, como en Facebook)
-            val mensaje = notificacion.mensaje ?: ""
+            val mensaje = notificacion.mensajeSeguro()
             if (mensaje.isNotBlank()) {
                 Text(
                     text = mensaje,

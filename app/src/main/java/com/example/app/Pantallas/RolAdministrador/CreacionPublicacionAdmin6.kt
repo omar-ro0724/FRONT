@@ -2,6 +2,7 @@ package com.example.app.Pantallas.RolAdministrador
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +42,7 @@ import com.example.app.ui.theme.GrisClaro
 import com.example.app.ViewModel.NotificacionViewModel
 import com.example.app.ViewModel.UsuarioViewModel
 import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -57,6 +59,7 @@ fun PantallaCreacionPublicacionAdmin(
     
     var descripcion by remember { mutableStateOf("") }
     var imagenSeleccionada by remember { mutableStateOf<String?>(null) }
+    var imagenUri by remember { mutableStateOf<Uri?>(null) }
     var mensajeExito by remember { mutableStateOf<String?>(null) }
     var mensajeError by remember { mutableStateOf<String?>(null) }
     var publicacionGuardada by remember { mutableStateOf(false) }
@@ -96,9 +99,43 @@ fun PantallaCreacionPublicacionAdmin(
     ) { success ->
         if (success && imageFile != null) {
             imagenSeleccionada = imageFile!!.absolutePath
+            imagenUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                imageFile!!
+            )
             mensajeError = null
         } else {
             mensajeError = "Error al tomar la foto"
+        }
+    }
+    
+    // ActivityResultLauncher para seleccionar imagen de galería
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            imagenUri = it
+            try {
+                // Copiar la imagen a un archivo temporal
+                val inputStream = context.contentResolver.openInputStream(it)
+                val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val imageFileName = "JPEG_${timeStamp}_"
+                val storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                val file = File.createTempFile(imageFileName, ".jpg", storageDir)
+                
+                inputStream?.use { input ->
+                    FileOutputStream(file).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                
+                imagenSeleccionada = file.absolutePath
+                imageFile = file
+                mensajeError = null
+            } catch (e: Exception) {
+                mensajeError = "Error al procesar la imagen: ${e.message}"
+            }
         }
     }
 
@@ -203,8 +240,22 @@ fun PantallaCreacionPublicacionAdmin(
 
             // Imagen seleccionada (si hay)
             imagenSeleccionada?.let { imagenPath ->
+                val file = File(imagenPath)
+                if (file.exists()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(file),
+                        contentDescription = "Imagen Seleccionada",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            } ?: imagenUri?.let { uri ->
                 Image(
-                    painter = rememberAsyncImagePainter(File(imagenPath)),
+                    painter = rememberAsyncImagePainter(uri),
                     contentDescription = "Imagen Seleccionada",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -253,7 +304,13 @@ fun PantallaCreacionPublicacionAdmin(
                                     openCamera()
                                 }
                                 "Galería" -> {
-                                    mensajeError = "Funcionalidad de galería pendiente de implementar"
+                                    pickImageLauncher.launch("image/*")
+                                }
+                                "Video" -> {
+                                    mensajeError = "Funcionalidad de video pendiente de implementar"
+                                }
+                                "Etiqueta" -> {
+                                    mensajeError = "Funcionalidad de etiqueta pendiente de implementar"
                                 }
                                 else -> {
                                     // Otras opciones pendientes
@@ -298,13 +355,22 @@ fun PantallaCreacionPublicacionAdmin(
                         mensajeExito = null
                     } else {
                         mensajeError = null
-                        val fechaActual = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
+                        // Formato de fecha compatible con LocalDateTime del backend (ISO 8601)
+                        // El backend puede parsear automáticamente este formato
+                        val fechaActual = java.time.LocalDateTime.now().format(
+                            java.time.format.DateTimeFormatter.ISO_DATE_TIME
+                        )
+                        
+                        // Solo enviar imagenUrl si hay una imagen seleccionada
                         val notificacion = Notificacion(
                             mensaje = descripcion,
                             fechaEnvio = fechaActual,
                             usuario = usuarioActual,
-                            imagenUrl = imagenSeleccionada  // Guardar ruta de la imagen
+                            imagenUrl = imagenSeleccionada?.takeIf { it.isNotBlank() }
                         )
+                        
+                        // Log para debugging
+                        android.util.Log.d("CreacionPublicacion", "Guardando notificación: mensaje=$descripcion, usuario=${usuarioActual?.id}, imagenUrl=${imagenSeleccionada}")
                         
                         coroutineScope.launch {
                             try {
@@ -315,14 +381,18 @@ fun PantallaCreacionPublicacionAdmin(
                                 // Limpiar campos después de guardar
                                 descripcion = ""
                                 imagenSeleccionada = null
+                                imagenUri = null
                                 imageFile = null
                                 
                                 // Marcar como guardado y refrescar
                                 publicacionGuardada = true
+                                // Esperar un momento antes de refrescar para asegurar que el servidor procesó
+                                kotlinx.coroutines.delay(500)
                                 notificacionViewModel.obtenerTodos()
                             } catch (e: Exception) {
                                 mensajeError = "Error al guardar publicación: ${e.message}"
                                 mensajeExito = null
+                                e.printStackTrace() // Para debugging
                             }
                         }
                     }

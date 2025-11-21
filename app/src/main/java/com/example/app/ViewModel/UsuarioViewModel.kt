@@ -76,5 +76,20 @@ class UsuarioViewModel @Inject constructor(
             _isLoading.value = false
         }
     }
+    
+    suspend fun guardarUsuario(usuario: Usuario): Usuario {
+        _isLoading.value = true
+        _error.value = null
+        return try {
+            val usuarioGuardado = repository.guardar(usuario)
+            _usuarios.value = _usuarios.value + usuarioGuardado
+            usuarioGuardado
+        } catch (e: Exception) {
+            _error.value = e.message ?: "Error al guardar usuario"
+            throw e
+        } finally {
+            _isLoading.value = false
+        }
+    }
 }
 

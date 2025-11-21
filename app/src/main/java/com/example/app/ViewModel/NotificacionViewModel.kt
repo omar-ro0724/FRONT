@@ -43,13 +43,26 @@ class NotificacionViewModel @Inject constructor(
         _isLoading.value = true
         _error.value = null
         try {
+            android.util.Log.d("NotificacionViewModel", "Obteniendo todas las notificaciones...")
             val lista = withContext(Dispatchers.IO) {
                 repository.obtenerTodos()
             }
-            _notificaciones.value = lista
+            android.util.Log.d("NotificacionViewModel", "Notificaciones recibidas: ${lista.size}")
+            // Filtrar notificaciones inválidas o vacías
+            val listaValida = lista.filter { notificacion ->
+                // Aceptar notificaciones que tengan al menos un ID o un mensaje no vacío
+                val esValida = notificacion.esValida()
+                if (!esValida) {
+                    android.util.Log.w("NotificacionViewModel", "Notificación inválida filtrada: id=${notificacion.id}, mensaje=${notificacion.mensaje}")
+                }
+                esValida
+            }
+            android.util.Log.d("NotificacionViewModel", "Notificaciones válidas: ${listaValida.size}")
+            _notificaciones.value = listaValida
             // Actualizar contador de no leídas (asumiendo que hay un campo leida en el modelo)
-            _notificacionesNoLeidas.value = lista.size // Por ahora, todas se consideran no leídas
+            _notificacionesNoLeidas.value = listaValida.size // Por ahora, todas se consideran no leídas
         } catch (e: Exception) {
+            android.util.Log.e("NotificacionViewModel", "Error al obtener notificaciones", e)
             _error.value = "Error al obtener notificaciones: ${e.message}"
             // Asegurar que la lista esté vacía en caso de error para evitar crashes
             _notificaciones.value = emptyList()
@@ -62,12 +75,18 @@ class NotificacionViewModel @Inject constructor(
         _isLoading.value = true
         _error.value = null
         try {
+            android.util.Log.d("NotificacionViewModel", "Guardando notificación: mensaje=${notificacion.mensaje}, usuario=${notificacion.usuario?.id}, fecha=${notificacion.fechaEnvio}")
             val notificacionGuardada = withContext(Dispatchers.IO) {
                 repository.guardar(notificacion)
             }
+            android.util.Log.d("NotificacionViewModel", "Notificación guardada exitosamente: id=${notificacionGuardada.id}")
+            // Esperar un momento antes de refrescar para asegurar que el servidor procesó
+            kotlinx.coroutines.delay(300)
             obtenerTodos()
         } catch (e: Exception) {
+            android.util.Log.e("NotificacionViewModel", "Error al guardar notificación", e)
             _error.value = "Error al guardar notificación: ${e.message}"
+            throw e // Re-throw para que la UI pueda manejarlo
         } finally {
             _isLoading.value = false
         }
@@ -83,6 +102,22 @@ class NotificacionViewModel @Inject constructor(
             obtenerTodos()
         } catch (e: Exception) {
             _error.value = "Error al eliminar notificación: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
+    }
+    
+    fun actualizar(id: Long, notificacion: Notificacion) = viewModelScope.launch {
+        _isLoading.value = true
+        _error.value = null
+        try {
+            val notificacionActualizada = withContext(Dispatchers.IO) {
+                repository.actualizar(id, notificacion)
+            }
+            obtenerTodos()
+        } catch (e: Exception) {
+            _error.value = "Error al actualizar notificación: ${e.message}"
+            throw e
         } finally {
             _isLoading.value = false
         }

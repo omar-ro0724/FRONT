@@ -50,6 +50,25 @@ class NotificacionRepository @Inject constructor(
             throw Exception("Error al guardar publicación: ${e.message}")
         }
     }
+    
+    suspend fun actualizar(id: Long, notificacion: Notificacion): Notificacion {
+        return try {
+            api.actualizarNotificacion(id, notificacion)
+        } catch (e: java.net.ConnectException) {
+            throw Exception("No se pudo conectar al servidor para actualizar la publicación")
+        } catch (e: java.net.SocketTimeoutException) {
+            throw Exception("Tiempo de espera agotado al actualizar la publicación")
+        } catch (e: retrofit2.HttpException) {
+            when (e.code()) {
+                400 -> throw Exception("Datos inválidos. Verifica que todos los campos estén correctos.")
+                404 -> throw Exception("Publicación no encontrada")
+                500 -> throw Exception("Error del servidor al actualizar. Verifica que la base de datos esté configurada correctamente.")
+                else -> throw Exception("Error HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: Exception) {
+            throw Exception("Error al actualizar publicación: ${e.message}")
+        }
+    }
 
     suspend fun eliminar(id: Long) {
         try {
