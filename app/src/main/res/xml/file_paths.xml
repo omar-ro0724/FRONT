@@ -1,8 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-files-path name="my_images" path="Pictures" />
-    <external-files-path name="my_camera" path="." />
-    <cache-path name="cache_images" path="." />
-    <files-path name="internal_images" path="." />
+    <!-- Archivos externos de la aplicación -->
+    <external-files-path 
+        name="external_files" 
+        path="." />
+    <!-- Archivos externos (incluye Pictures, Movies, etc.) -->
+    <external-path 
+        name="external" 
+        path="." />
+    <!-- Archivos internos de la aplicación -->
+    <files-path 
+        name="files" 
+        path="." />
+    <!-- Cache de la aplicación -->
+    <cache-path 
+        name="cache" 
+        path="." />
+    <!-- Directorio de Pictures para imágenes -->
+    <external-files-path 
+        name="external_pictures" 
+        path="Pictures/" />
+    <!-- Directorio de Movies para videos -->
+    <external-files-path 
+        name="external_movies" 
+        path="Movies/" />
 </paths>
-

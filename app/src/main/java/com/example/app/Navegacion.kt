@@ -121,7 +121,9 @@ fun Navegacion(navController: NavHostController) {
 
         // --- RESIDENTE ---
         composable("PantallaInicioResidentes") { PantallaInicioResidentes(navController) }
-        composable("PantallaNuevaPublicacion") { PantallaNuevaPublicacion(navController) }
+        composable("PantallaNuevaPublicacion") { 
+            PantallaNuevaPublicacion(navController, usuarioViewModel) 
+        }
         composable("PantallaNotificacionesResidente") { PantallaNotificacionesResidente(navController) }
         composable("PantallaRecibos") { PantallaRecibos(navController) }
         composable("PantallaPagos") { PantallaPagos(navController) }

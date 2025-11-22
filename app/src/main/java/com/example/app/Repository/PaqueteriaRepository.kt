@@ -20,6 +20,10 @@ class PaqueteriaRepository @Inject constructor(
         return api.guardarPaquete(paqueteria)
     }
 
+    suspend fun actualizar(id: Long, paqueteria: Paqueteria): Paqueteria {
+        return api.actualizarPaquete(id, paqueteria)
+    }
+
     suspend fun eliminar(id: Long) {
         api.eliminarPaquete(id)
     }

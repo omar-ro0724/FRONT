@@ -86,7 +86,8 @@ class NotificacionViewModel @Inject constructor(
         } catch (e: Exception) {
             android.util.Log.e("NotificacionViewModel", "Error al guardar notificación", e)
             _error.value = "Error al guardar notificación: ${e.message}"
-            throw e // Re-throw para que la UI pueda manejarlo
+            // NO hacer re-throw para evitar crashes. La UI debe manejar el error desde _error.value
+            // throw e // Comentado para evitar crashes
         } finally {
             _isLoading.value = false
         }

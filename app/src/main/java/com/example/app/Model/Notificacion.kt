@@ -15,11 +15,28 @@ data class Notificacion(
     val usuario: Usuario? = null,
 
     @SerializedName("imagenUrl")
-    val imagenUrl: String? = null  // Ruta de la imagen adjunta
+    val imagenUrl: String? = null,  // Ruta de la imagen adjunta
+
+    @SerializedName("videoUrl")
+    val videoUrl: String? = null,  // Ruta del video adjunto
+
+    @SerializedName("usuariosEtiquetados")
+    val usuariosEtiquetados: String? = null  // JSON array de IDs de usuarios etiquetados
 ) {
     // Función helper para obtener mensaje seguro (renombrada para evitar conflicto con getter automático)
     fun mensajeSeguro(): String = mensaje ?: ""
     
     // Función helper para verificar si la notificación es válida
     fun esValida(): Boolean = (id != null) || (mensaje?.isNotBlank() == true)
+    
+    // Función helper para obtener lista de IDs de usuarios etiquetados
+    fun obtenerUsuariosEtiquetados(): List<Long> {
+        return try {
+            usuariosEtiquetados?.let {
+                com.google.gson.Gson().fromJson(it, Array<Long>::class.java).toList()
+            } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }

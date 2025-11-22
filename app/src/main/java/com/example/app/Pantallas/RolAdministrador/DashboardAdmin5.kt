@@ -1,5 +1,7 @@
 package com.example.app.Pantallas.RolAdministrador
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,6 +16,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.DisposableEffect
@@ -22,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +41,8 @@ import com.example.app.ui.theme.DoradoElegante
 import com.example.app.ui.theme.GrisClaro
 import com.example.app.ui.theme.GrisOscuro
 import com.example.app.ViewModel.NotificacionViewModel
+import com.example.app.ViewModel.UsuarioViewModel
+import com.google.gson.Gson
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -58,13 +65,15 @@ fun PantallaDashboardAdmin(
         }
     }
     
-    // Refrescar cuando se vuelve a esta pantalla desde otra
-    LaunchedEffect(navController) {
-        // Este efecto se ejecutará cuando la pantalla esté activa
-        try {
-            notificacionViewModel.obtenerTodos()
-        } catch (e: Exception) {
-            // Error manejado por el ViewModel
+    // Refrescar periódicamente para mantener sincronizado con otros dashboards
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(5000) // Refrescar cada 5 segundos
+            try {
+                notificacionViewModel.obtenerTodos()
+            } catch (e: Exception) {
+                // Error manejado por el ViewModel
+            }
         }
     }
 
@@ -201,7 +210,8 @@ fun PantallaDashboardAdmin(
                         val notificacion = notificacionesReversed[index]
                         PublicacionItem(
                             notificacion = notificacion,
-                            notificacionViewModel = notificacionViewModel
+                            notificacionViewModel = notificacionViewModel,
+                            usuarioViewModel = hiltViewModel()
                         )
                     }
                 }
@@ -213,10 +223,32 @@ fun PantallaDashboardAdmin(
 @Composable
 fun PublicacionItem(
     notificacion: Notificacion,
-    notificacionViewModel: NotificacionViewModel
+    notificacionViewModel: NotificacionViewModel,
+    usuarioViewModel: UsuarioViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val usuarios by usuarioViewModel.usuarios.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    
+    // Obtener usuarios etiquetados
+    val usuariosEtiquetadosIds = notificacion.obtenerUsuariosEtiquetados()
+    val usuariosEtiquetadosNombres = remember(usuariosEtiquetadosIds, usuarios) {
+        usuariosEtiquetadosIds.mapNotNull { id ->
+            usuarios.find { it.id == id }?.nombre
+        }
+    }
+    
+    // Cargar usuarios si no están cargados
+    LaunchedEffect(Unit) {
+        if (usuarios.isEmpty() && usuariosEtiquetadosIds.isNotEmpty()) {
+            try {
+                usuarioViewModel.obtenerTodos()
+            } catch (e: Exception) {
+                // Error manejado por el ViewModel
+            }
+        }
+    }
     
     Card(
         modifier = Modifier
@@ -325,6 +357,37 @@ fun PublicacionItem(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
+            
+            // Mostrar usuarios etiquetados si existen
+            if (usuariosEtiquetadosNombres.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Etiquetados: ",
+                        color = GrisClaro,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    usuariosEtiquetadosNombres.forEachIndexed { index, nombre ->
+                        Card(
+                            modifier = Modifier.padding(end = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = DoradoElegante.copy(alpha = 0.3f))
+                        ) {
+                            Text(
+                                text = "@$nombre",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             // Imagen si existe (ocupa todo el ancho, como en Facebook)
             val imagenPath = notificacion.imagenUrl
@@ -347,6 +410,117 @@ fun PublicacionItem(
                             .fillMaxWidth()
                             .heightIn(min = 200.dp, max = 400.dp)
                     )
+                }
+            }
+            
+            // Video si existe
+            val videoPath = notificacion.videoUrl
+            if (videoPath != null && videoPath.isNotBlank()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clickable {
+                            try {
+                                val videoUri: Uri = when {
+                                    videoPath.startsWith("content://") -> {
+                                        // URI de content provider - usar directamente
+                                        Uri.parse(videoPath)
+                                    }
+                                    videoPath.startsWith("file://") -> {
+                                        // URI de archivo - extraer la ruta y usar FileProvider
+                                        val filePath = videoPath.removePrefix("file://")
+                                        val file = File(filePath)
+                                        if (file.exists()) {
+                                            androidx.core.content.FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.fileprovider",
+                                                file
+                                            )
+                                        } else {
+                                            Uri.parse(videoPath)
+                                        }
+                                    }
+                                    videoPath.startsWith("/") -> {
+                                        // Ruta absoluta de archivo
+                                        val file = File(videoPath)
+                                        if (file.exists() && file.canRead()) {
+                                            // Usar FileProvider para archivos locales (requerido en Android 7+)
+                                            androidx.core.content.FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.fileprovider",
+                                                file
+                                            )
+                                        } else {
+                                            // Si el archivo no existe, intentar con URI desde archivo
+                                            android.util.Log.w("DashboardAdmin", "Video file no existe: $videoPath")
+                                            Uri.fromFile(file)
+                                        }
+                                    }
+                                    else -> {
+                                        // Intentar como URI directo
+                                        Uri.parse(videoPath)
+                                    }
+                                }
+                                
+                                android.util.Log.d("DashboardAdmin", "Intentando reproducir video: $videoUri")
+                                
+                                // Crear Intent para reproducir video
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(videoUri, "video/*")
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    // Otorgar permisos a todas las aplicaciones que manejen el intent
+                                    addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+                                }
+                                
+                                // Verificar que haya una app que pueda reproducir el video
+                                val resolveInfo = intent.resolveActivity(context.packageManager)
+                                if (resolveInfo != null) {
+                                    android.util.Log.d("DashboardAdmin", "Iniciando reproductor de video")
+                                    context.startActivity(intent)
+                                } else {
+                                    android.util.Log.e("DashboardAdmin", "No hay aplicación para reproducir videos")
+                                    // Intentar con un tipo MIME más genérico
+                                    val fallbackIntent = Intent(Intent.ACTION_VIEW).apply {
+                                        setData(videoUri)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    if (fallbackIntent.resolveActivity(context.packageManager) != null) {
+                                        context.startActivity(fallbackIntent)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("DashboardAdmin", "Error al abrir video: ${e.message}", e)
+                                e.printStackTrace()
+                            }
+                        },
+                    colors = CardDefaults.cardColors(containerColor = GrisOscuro)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Reproducir video",
+                                tint = Color.White,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tocar para reproducir video",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
             }
 
