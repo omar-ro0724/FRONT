@@ -163,12 +163,9 @@ fun PantallaInicioResidentes(
             }
         } else {
             // Filtrar notificaciones válidas y EXCLUIR ABSOLUTAMENTE las de paquetería Y recibos (solo mostrar publicaciones/novedades)
-            // Usar remember sin parámetros para recalcular en cada recomposición
-            val notificacionesValidas = remember(notificaciones.size, notificaciones) {
-                android.util.Log.d("DashboardResidente", "=== FILTRANDO NOTIFICACIONES PARA DASHBOARD ===")
-                android.util.Log.d("DashboardResidente", "Total notificaciones recibidas: ${notificaciones.size}")
-                
-                val filtradas = notificaciones.filter { notificacion ->
+            // Usar derivedStateOf para evitar recálculos innecesarios cuando el contenido no cambia
+            val notificacionesValidas = remember(notificaciones) {
+                notificaciones.filter { notificacion ->
                     // Primero verificar que sea válida
                     if (!notificacion.esValida()) {
                         return@filter false
@@ -188,23 +185,8 @@ fun PantallaInicioResidentes(
                     val esRecibo = tieneRecibo && tieneTipoRecibo
                     
                     // SOLO incluir si NO es de paquetería Y NO es de recibo
-                    val incluir = !esPaqueteria && !esRecibo
-                    
-                    if (!incluir) {
-                        if (esPaqueteria) {
-                            android.util.Log.w("DashboardResidente", "❌ EXCLUIDA notificación de paquetería: ID=${notificacion.id}, mensaje=${notificacion.mensaje}")
-                        }
-                        if (esRecibo) {
-                            android.util.Log.w("DashboardResidente", "❌ EXCLUIDA notificación de recibo: ID=${notificacion.id}, mensaje=${notificacion.mensaje}")
-                        }
-                    } else {
-                        android.util.Log.d("DashboardResidente", "✓ INCLUIDA notificación válida: ID=${notificacion.id}, mensaje=${notificacion.mensaje?.take(50)}...")
-                    }
-                    incluir
+                    !esPaqueteria && !esRecibo
                 }
-                
-                android.util.Log.d("DashboardResidente", "Notificaciones válidas para Dashboard: ${filtradas.size} de ${notificaciones.size}")
-                filtradas
             }
             
             if (notificacionesValidas.isEmpty()) {
